@@ -11,15 +11,9 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import apiKey from "../config";
-
-
-// Dynamic photolist component for any random query results which returns a photolist component
-const DynamicPhotoList = ({ imagesArray }) => {
-  const { query } = useParams(); // Correctly using `useParams` in a functional component
-  return <PhotoList photoArray={imagesArray} title={query} />;
-};
 
 function App() {
   //setting up states
@@ -29,11 +23,19 @@ function App() {
   const [imagesArray, setImagesArray] = useState([]);
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
+  const location = useLocation()
+  console.log(location)
+
+  // Dynamic photolist component for any random query results which returns a photolist component
+  const DynamicPhotoList = ({ imagesArray }) => {
+    const { query } = useParams() // Correctly using `useParams` in a functional component
+    return <PhotoList photoArray={imagesArray} title={query} />;
+  };
 
   //creating an async function to fetch images from flickr
   async function fetchImages(query) {
-    setLoading(true)
+    setLoading(true);
     try {
       const url = `https://www.flickr.com/services/rest/?method=flickr.photos.search&api_key=${apiKey}&tags=${query}&per_page=24&format=json&nojsoncallback=1`;
       const response = await fetch(url);
@@ -52,10 +54,10 @@ function App() {
       } else {
         setImagesArray(urlArr);
       }
-    } catch(error) {
-      console.error('Error fetching data: ', error)
+    } catch (error) {
+      console.error("Error fetching data: ", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -66,11 +68,15 @@ function App() {
   };
 
   //cats, dogs and computers is loaded everytime by default using effect hooks
+  const query = location.pathname.split('/')[2]
   useEffect(() => {
     fetchImages("cats");
     fetchImages("dogs");
     fetchImages("computers");
-  }, []);
+    if (query !== undefined) {
+      fetchImages(query)
+    }
+  }, [query]);
 
   return (
     <>
@@ -97,13 +103,16 @@ function App() {
           {/* Loading component rendered is loading state is true and as soon as loading state is false photolist component is rendered. */}
           <Route
             path="search/:query"
-            element={loading ? <Loading /> : <DynamicPhotoList imagesArray={imagesArray} />}
+            element={
+              loading ? (
+                <Loading />
+              ) : (
+                <DynamicPhotoList imagesArray={imagesArray} />
+              )
+            }
           />
           {/* NotFount component rendered if route doesn't match any path */}
-          <Route
-            path="*"
-            element={<NotFound />}
-          />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </>
